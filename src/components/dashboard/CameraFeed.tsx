@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { CameraStatus, SystemStatus } from '@/types';
-import { Loader2, CameraOff, Play, Square, Maximize2, Minimize2, Video } from 'lucide-react';
+import { CameraStatus, SystemStatus, FacingMode } from '@/types';
+import { Loader2, CameraOff, Play, Square, Maximize2, Minimize2, Video, SwitchCamera } from 'lucide-react';
 
 interface CameraFeedProps {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -11,8 +11,10 @@ interface CameraFeedProps {
   systemStatus: SystemStatus;
   errorMessage: string | null;
   postFallSecondsLeft: number;
+  facingMode?: FacingMode;
   onStart: () => void;
   onStop: () => void;
+  onSwitchCamera?: () => void;
 }
 
 export default function CameraFeed({
@@ -22,8 +24,10 @@ export default function CameraFeed({
   systemStatus,
   errorMessage,
   postFallSecondsLeft,
+  facingMode = 'user',
   onStart,
   onStop,
+  onSwitchCamera,
 }: CameraFeedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -90,6 +94,19 @@ export default function CameraFeed({
         </div>
 
         <div className="flex items-center gap-2">
+          {onSwitchCamera && (
+            <button
+              onClick={onSwitchCamera}
+              title={facingMode === 'environment' ? 'Kamera Belakang Aktif (Klik untuk ganti ke Depan)' : 'Kamera Depan Aktif (Klik untuk ganti ke Belakang)'}
+              className="flex items-center gap-1.5 px-2.5 h-7 rounded border border-[#D4E0DC] text-[#4A6760] hover:bg-[#F7F8F5] hover:text-[#0F2421] transition-colors"
+            >
+              <SwitchCamera size={13} className="text-[#173C39]" />
+              <span className="text-[11px] font-medium hidden sm:inline">
+                {facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}
+              </span>
+            </button>
+          )}
+
           {isActive && (
             <button
               onClick={toggleFullscreen}
@@ -249,6 +266,16 @@ export default function CameraFeed({
                   style={{ width: `${(postFallSecondsLeft / 5) * 100}%` }}
                 />
               </div>
+            )}
+
+            {onSwitchCamera && (
+              <button
+                onClick={onSwitchCamera}
+                title={facingMode === 'environment' ? 'Ganti ke Kamera Depan' : 'Ganti ke Kamera Belakang'}
+                className="absolute bottom-3 right-12 flex items-center justify-center w-7 h-7 rounded bg-black/60 backdrop-blur-sm text-white/80 hover:bg-black/80 hover:text-white transition-colors border border-white/10"
+              >
+                <SwitchCamera size={13} />
+              </button>
             )}
 
             <button

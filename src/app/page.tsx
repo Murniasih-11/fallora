@@ -60,8 +60,10 @@ export default function Home() {
     videoRef,
     cameraStatus,
     errorMessage,
+    facingMode,
     startCamera,
     stopCamera,
+    switchCamera,
   } = useCamera();
 
   const {
@@ -73,6 +75,7 @@ export default function Home() {
     stats,
     isModelLoading,
     canvasRef,
+    setFacingMode: setDetectionFacingMode,
     startDetection,
     stopDetection,
     resetStatus,
@@ -81,11 +84,17 @@ export default function Home() {
   } = useDetectionState();
 
   const handleStartMonitoring = useCallback(async () => {
-    const started = await startCamera();
+    const started = await startCamera(facingMode);
     if (started && videoRef.current) {
-      await startDetection(videoRef.current);
+      await startDetection(videoRef.current, facingMode);
     }
-  }, [startCamera, startDetection, videoRef]);
+  }, [startCamera, startDetection, videoRef, facingMode]);
+
+  const handleSwitchCamera = useCallback(async () => {
+    const nextMode = facingMode === 'user' ? 'environment' : 'user';
+    setDetectionFacingMode(nextMode);
+    await switchCamera();
+  }, [facingMode, switchCamera, setDetectionFacingMode]);
 
   const handleStopMonitoring = useCallback(() => {
     stopDetection();
@@ -164,9 +173,11 @@ export default function Home() {
                 incidents={incidents}
                 isModelLoading={isModelLoading}
                 errorMessage={errorMessage}
+                facingMode={facingMode}
                 onStart={handleStartMonitoring}
                 onStop={handleStopMonitoring}
                 onReset={handleReset}
+                onSwitchCamera={handleSwitchCamera}
               />
             </div>
 

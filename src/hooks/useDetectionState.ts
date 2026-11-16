@@ -13,6 +13,7 @@ import {
   IncidentRecord,
   AlgorithmResult,
   IncidentStats,
+  FacingMode,
 } from '@/types';
 import { CONFIG } from '@/lib/config';
 import { canTransition } from '@/lib/stateMachine';
@@ -43,8 +44,10 @@ export interface UseDetectionStateReturn {
   incidents: IncidentRecord[];
   stats: IncidentStats;
   isModelLoading: boolean;
+  facingMode: FacingMode;
+  setFacingMode: (mode: FacingMode) => void;
   transition: (next: SystemStatus) => boolean;
-  startDetection: (videoEl: HTMLVideoElement) => void;
+  startDetection: (videoEl: HTMLVideoElement, mode?: FacingMode) => void;
   stopDetection: () => void;
   resetStatus: () => void;
   updateIncident: (
@@ -74,6 +77,13 @@ export function useDetectionState(): UseDetectionStateReturn {
     falsePositives: 0,
   });
   const [isModelLoading, setIsModelLoading] = useState(false);
+  const [facingMode, setFacingModeState] = useState<FacingMode>('user');
+  const facingModeRef = useRef<FacingMode>('user');
+
+  const setFacingMode = useCallback((mode: FacingMode) => {
+    facingModeRef.current = mode;
+    setFacingModeState(mode);
+  }, []);
 
   // Sync client storage after initial hydration to prevent SSR mismatch
   useEffect(() => {
@@ -225,6 +235,7 @@ export function useDetectionState(): UseDetectionStateReturn {
     const vw = video.videoWidth || CONFIG.CAMERA_WIDTH;
     const vh = video.videoHeight || CONFIG.CAMERA_HEIGHT;
     const currentStatus = statusRef.current;
+    const isFrontCamera = facingModeRef.current === 'user';
 
     if (frameCountRef.current % CONFIG.DETECTION_FRAME_INTERVAL === 0) {
       (async () => {
@@ -240,7 +251,7 @@ export function useDetectionState(): UseDetectionStateReturn {
           if (canvasRef.current && video) {
             const ctx = canvasRef.current.getContext('2d');
             if (ctx) {
-              drawPoses(ctx, [], currentStatus, vw, vh, video);
+              drawPoses(ctx, [], currentStatus, vw, vh, video, isFrontCamera);
             }
           }
 
@@ -254,7 +265,7 @@ export function useDetectionState(): UseDetectionStateReturn {
         if (canvasRef.current) {
           const ctx = canvasRef.current.getContext('2d');
           if (ctx) {
-            drawPoses(ctx, poses, currentStatus, vw, vh, video);
+            drawPoses(ctx, poses, currentStatus, vw, vh, video, isFrontCamera);
           }
         }
 
@@ -320,7 +331,7 @@ export function useDetectionState(): UseDetectionStateReturn {
       if (canvasRef.current && video && video.readyState >= 2) {
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
-          drawPoses(ctx, lastPosesRef.current, currentStatus, vw, vh, video);
+          drawPoses(ctx, lastPosesRef.current, currentStatus, vw, vh, video, isFrontCamera);
         }
       }
       rafIdRef.current = requestAnimationFrame(() => {
@@ -334,7 +345,11 @@ export function useDetectionState(): UseDetectionStateReturn {
   }, [detectionLoop]);
 
   const startDetection = useCallback(
-    async (videoEl: HTMLVideoElement) => {
+    async (videoEl: HTMLVideoElement, mode?: FacingMode) => {
+      if (mode) {
+        facingModeRef.current = mode;
+        setFacingModeState(mode);
+      }
       videoElRef.current = videoEl;
       frameCountRef.current = 0;
 
@@ -452,6 +467,8 @@ export function useDetectionState(): UseDetectionStateReturn {
     incidents,
     stats,
     isModelLoading,
+    facingMode,
+    setFacingMode,
     transition,
     startDetection,
     stopDetection,

@@ -14,6 +14,7 @@ export type SystemStatus =
   | 'EMERGENCY';
 
 export type CameraStatus = 'disconnected' | 'connecting' | 'active' | 'error';
+export type FacingMode = 'user' | 'environment';
 
 // ---- Computer Vision Types ----
 

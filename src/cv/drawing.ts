@@ -110,7 +110,8 @@ export function drawPoses(
   status: SystemStatus,
   videoWidth: number,
   videoHeight: number,
-  videoEl?: HTMLVideoElement
+  videoEl?: HTMLVideoElement,
+  mirror: boolean = true
 ) {
   // Samakan resolusi buffer canvas dengan resolusi asli video kamera
   // Ini mencegah distorsi / gambar penyok (squashing)
@@ -127,10 +128,12 @@ export function drawPoses(
   // Bersihkan canvas
   ctx.clearRect(0, 0, cw, ch);
 
-  // Terapkan mirror horizontal secara seragam (selfie mode) untuk VIDEO dan SKELETON
+  // Terapkan mirror horizontal secara seragam (selfie mode) untuk VIDEO dan SKELETON jika kamera depan
   ctx.save();
-  ctx.translate(cw, 0);
-  ctx.scale(-1, 1);
+  if (mirror) {
+    ctx.translate(cw, 0);
+    ctx.scale(-1, 1);
+  }
 
   // 1. Gambar frame video
   if (videoEl && videoEl.readyState >= 2) {

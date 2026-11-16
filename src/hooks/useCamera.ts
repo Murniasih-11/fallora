@@ -5,15 +5,17 @@
 // ============================================================
 
 import { useRef, useState, useCallback } from 'react';
-import { CameraStatus } from '@/types';
+import { CameraStatus, FacingMode } from '@/types';
 import { CONFIG } from '@/lib/config';
 
 export interface UseCameraReturn {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   cameraStatus: CameraStatus;
   errorMessage: string | null;
-  startCamera: () => Promise<boolean>;
+  facingMode: FacingMode;
+  startCamera: (mode?: FacingMode) => Promise<boolean>;
   stopCamera: () => void;
+  switchCamera: () => Promise<boolean>;
 }
 
 export function useCamera(): UseCameraReturn {
@@ -21,6 +23,8 @@ export function useCamera(): UseCameraReturn {
   const streamRef = useRef<MediaStream | null>(null);
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('disconnected');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<FacingMode>('user');
+  const facingModeRef = useRef<FacingMode>('user');
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -34,7 +38,11 @@ export function useCamera(): UseCameraReturn {
     setErrorMessage(null);
   }, []);
 
-  const startCamera = useCallback(async (): Promise<boolean> => {
+  const startCamera = useCallback(async (requestedMode?: FacingMode): Promise<boolean> => {
+    const targetMode = requestedMode || facingModeRef.current;
+    facingModeRef.current = targetMode;
+    setFacingMode(targetMode);
+
     setErrorMessage(null);
     setCameraStatus('connecting');
 
@@ -44,16 +52,36 @@ export function useCamera(): UseCameraReturn {
       return false;
     }
 
+    // Hentikan stream sebelumnya jika sedang beralih kamera
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: CONFIG.CAMERA_WIDTH },
-          height: { ideal: CONFIG.CAMERA_HEIGHT },
-          frameRate: { ideal: CONFIG.CAMERA_FPS, max: CONFIG.CAMERA_FPS },
-          facingMode: 'user',
-        },
-        audio: false,
-      });
+      let stream: MediaStream;
+      try {
+        // Coba dengan preferensi facingMode (user / environment)
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: CONFIG.CAMERA_WIDTH },
+            height: { ideal: CONFIG.CAMERA_HEIGHT },
+            frameRate: { ideal: CONFIG.CAMERA_FPS, max: CONFIG.CAMERA_FPS },
+            facingMode: { ideal: targetMode },
+          },
+          audio: false,
+        });
+      } catch {
+        // Fallback jika facingMode tidak didukung pada perangkat kamera tunggal
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: CONFIG.CAMERA_WIDTH },
+            height: { ideal: CONFIG.CAMERA_HEIGHT },
+            frameRate: { ideal: CONFIG.CAMERA_FPS, max: CONFIG.CAMERA_FPS },
+          },
+          audio: false,
+        });
+      }
 
       streamRef.current = stream;
 
@@ -62,13 +90,10 @@ export function useCamera(): UseCameraReturn {
         // Set stream langsung ke srcObject
         video.srcObject = stream;
 
-        // play() — browser akan otomatis play karena autoPlay + muted
-        // Tangani NotAllowedError yang kadang muncul di beberapa browser
         try {
           await video.play();
         } catch (playErr) {
           const e = playErr as Error;
-          // AbortError = ok (navigasi), NotAllowedError = no autoplay policy
           if (e.name !== 'AbortError') {
             console.warn('[FALLORA] video.play() warning:', e.name, e.message);
           }
@@ -97,5 +122,20 @@ export function useCamera(): UseCameraReturn {
     }
   }, []);
 
-  return { videoRef, cameraStatus, errorMessage, startCamera, stopCamera };
+  const switchCamera = useCallback(async (): Promise<boolean> => {
+    const nextMode: FacingMode = facingModeRef.current === 'user' ? 'environment' : 'user';
+    facingModeRef.current = nextMode;
+    setFacingMode(nextMode);
+    return startCamera(nextMode);
+  }, [startCamera]);
+
+  return {
+    videoRef,
+    cameraStatus,
+    errorMessage,
+    facingMode,
+    startCamera,
+    stopCamera,
+    switchCamera,
+  };
 }

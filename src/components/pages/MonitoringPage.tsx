@@ -1,6 +1,6 @@
 'use client';
 
-import { SystemStatus, CameraStatus, IncidentRecord, DetectionInfo } from '@/types';
+import { SystemStatus, CameraStatus, IncidentRecord, DetectionInfo, FacingMode } from '@/types';
 import StatusCard from '@/components/dashboard/StatusCard';
 import CameraFeed from '@/components/dashboard/CameraFeed';
 import DetectionInfoPanel from '@/components/dashboard/DetectionInfo';
@@ -18,9 +18,11 @@ interface MonitoringPageProps {
   incidents: IncidentRecord[];
   isModelLoading: boolean;
   errorMessage: string | null;
+  facingMode?: FacingMode;
   onStart: () => void;
   onStop: () => void;
   onReset: () => void;
+  onSwitchCamera?: () => void;
 }
 
 function formatTime(ts: number): string {
@@ -49,9 +51,11 @@ export default function MonitoringPage({
   incidents,
   isModelLoading,
   errorMessage,
+  facingMode,
   onStart,
   onStop,
   onReset,
+  onSwitchCamera,
 }: MonitoringPageProps) {
   const isIdle = systemStatus === 'IDLE' && cameraStatus === 'disconnected';
   const isEmergency = systemStatus === 'EMERGENCY';
@@ -99,8 +103,10 @@ export default function MonitoringPage({
             systemStatus={systemStatus}
             errorMessage={errorMessage}
             postFallSecondsLeft={postFallSecondsLeft}
+            facingMode={facingMode}
             onStart={onStart}
             onStop={onStop}
+            onSwitchCamera={onSwitchCamera}
           />
         </div>
         <div>
