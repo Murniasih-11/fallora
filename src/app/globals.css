@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: var(--font-manrope), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  /* Legacy / existing vars kept for backward compat */
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Fallora Design System */
+  --color-evergreen: #173C39;
+  --color-sage: #E8F0EC;
+  --color-ivory: #F7F8F5;
+  --color-amber-muted: #D6A66A;
+  --color-alert: #B94B48;
+  --color-text-primary: #0F2421;
+  --color-text-secondary: #4A6760;
+  --color-border: #D4E0DC;
+
+  /* Keep existing vars for any existing usage */
+  --bg-app: #F7F8F5;
+  --primary: #0F2421;
+  --secondary: #4A6760;
+  --border-subtle: #D4E0DC;
+  --accent: #173C39;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #B94B48;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: #F7F8F5;
+  color: #0F2421;
+  font-family: var(--font-sans);
+}
+
+/* Subtle enterprise scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #D4E0DC transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #D4E0DC;
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #4A6760;
+}
+
+/* Safe area for iOS bottom tab */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
